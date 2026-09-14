@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+patch_fonts.py
+cinzel_b64.txt
+cinzel_med_b64.txt

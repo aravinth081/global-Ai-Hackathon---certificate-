@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/control", "dest": "/control.html" },
+    { "src": "/winner", "dest": "/winner.html" },
+    { "src": "/judges", "dest": "/judges.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
