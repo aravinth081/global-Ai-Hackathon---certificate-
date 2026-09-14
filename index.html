@@ -5281,11 +5281,57 @@
       }
     }
 
+    /* ─── MOBILE INTRO SPLASH 60FPS HARDWARE ACCELERATION ─── */
+    @media (max-width: 768px) {
+      #intro-splash {
+        overscroll-behavior: contain !important;
+      }
+      .splash-aurora {
+        filter: blur(35px) !important;
+        mix-blend-mode: normal !important;
+        opacity: 0.35 !important;
+        will-change: transform !important;
+      }
+      .aurora-3 {
+        display: none !important;
+      }
+      .splash-horizon-grid {
+        animation: none !important;
+        opacity: 0.35 !important;
+      }
+      .splash-grid-bg {
+        animation: none !important;
+      }
+      .splash-noise {
+        display: none !important;
+      }
+      .splash-float-code {
+        display: none !important;
+      }
+      .splash-orbit-ring.ring-1 {
+        box-shadow: none !important;
+      }
+      .code-poster-glow {
+        filter: blur(12px) !important;
+        animation: none !important;
+      }
+      .code-poster-card {
+        animation: none !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(6, 182, 212, 0.3) !important;
+      }
+      .code-track-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(8, 16, 42, 0.94) !important;
+      }
+    }
+
     @media (max-width: 600px) {
       /* Splash Screen & Poster Card */
       #intro-splash {
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
       }
       .splash-stage {
         padding: 24px 12px !important;
@@ -5507,36 +5553,40 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateZ(0);
+      will-change: opacity, transform;
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     #intro-splash.exit {
       opacity: 0;
-      transform: scale(1.08);
-      filter: blur(14px);
+      transform: scale(1.05);
       pointer-events: none;
     }
 
 
-    /* ── Energy Pulse Rings ── */
+    /* ── Energy Pulse Rings (Hardware-Accelerated Scale) ── */
     .splash-energy-ring {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
+      transform: translate(-50%, -50%) scale(0.5);
       border-radius: 50%;
       border: 1px solid rgba(6, 182, 212, 0.3);
       pointer-events: none;
       z-index: 2;
       animation: energyExpand 4s ease-out infinite;
+      will-change: transform, opacity;
     }
 
     .splash-energy-ring:nth-child(2) { animation-delay: 1.33s; }
     .splash-energy-ring:nth-child(3) { animation-delay: 2.66s; }
 
     @keyframes energyExpand {
-      0% { width: 50px; height: 50px; opacity: 0.8; border-color: rgba(34, 211, 238, 0.6); }
-      100% { width: 800px; height: 800px; opacity: 0; border-color: rgba(34, 211, 238, 0); }
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; border-color: rgba(34, 211, 238, 0.6); }
+      100% { transform: translate(-50%, -50%) scale(8); opacity: 0; border-color: rgba(34, 211, 238, 0); }
     }
 
     /* ── HUD Corner Brackets ── */
@@ -5917,13 +5967,11 @@
     @keyframes stage2Pop {
       0% {
         opacity: 0;
-        transform: scale(0.9);
-        filter: blur(8px);
+        transform: scale(0.92);
       }
       100% {
         opacity: 1;
         transform: scale(1);
-        filter: blur(0px);
       }
     }
 
@@ -6095,7 +6143,8 @@
       border-radius: 999px;
       background: linear-gradient(90deg, #2563EB 0%, #06B6D4 50%, #22D3EE 100%);
       box-shadow: 0 0 16px rgba(6, 182, 212, 0.8), 0 0 30px rgba(37, 99, 235, 0.6);
-      transition: width 0.08s linear;
+      transition: none;
+      will-change: width;
     }
 
     .splash-pct-row {
@@ -8088,6 +8137,8 @@
 
     let nebula1 = null;
     let nebula2 = null;
+    let particlesRunning = false;
+    let particlesRafId = null;
 
     function initParticles() {
       canvas.width = window.innerWidth;
@@ -8119,6 +8170,7 @@
     }
 
     function animateParticles() {
+      if (!particlesRunning) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       if (nebula1 && nebula2) {
@@ -8149,16 +8201,15 @@
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
         if (!isFastScrolling && mouse.x !== null && mouse.y !== null) {
-          let dx = p.x - mouse.x;
-          let dy = p.y - mouse.y;
-          let dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < mouse.radius) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = `rgba(34, 211, 238, ${0.16 * (1 - dist / mouse.radius)})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
+          let dx = mouse.x - p.x;
+          let dy = mouse.y - p.y;
+          if (dx > -mouse.radius && dx < mouse.radius && dy > -mouse.radius && dy < mouse.radius) {
+            let dist = Math.hypot(dx, dy);
+            if (dist < mouse.radius) {
+              let force = (mouse.radius - dist) / mouse.radius;
+              p.x -= (dx / dist) * force * 1.5;
+              p.y -= (dy / dist) * force * 1.5;
+            }
           }
         }
 
@@ -9178,6 +9229,9 @@
       if (navType === 'back_forward') {
         splash.style.display = 'none';
         document.body.style.overflow = '';
+        if (typeof window.startBackgroundParticles === 'function') {
+          window.startBackgroundParticles();
+        }
         return;
       }
 
@@ -9195,27 +9249,35 @@
       let finished = false;
       let animFrameId;
 
-      // Ambient Cyber Particles on Splash Screen Canvas
+      // Ambient Cyber Particles on Splash Screen Canvas (60FPS Optimized)
+      let ctx = null;
+      let w = window.innerWidth;
+      let h = window.innerHeight;
+
       if (canvas) {
-        const ctx = canvas.getContext('2d');
-        let w = (canvas.width = window.innerWidth);
-        let h = (canvas.height = window.innerHeight);
+        ctx = canvas.getContext('2d');
+        canvas.width = w;
+        canvas.height = h;
 
         const onResize = () => {
           if (!splash || splash.style.display === 'none') return;
           w = canvas.width = window.innerWidth;
           h = canvas.height = window.innerHeight;
         };
-        window.addEventListener('resize', onResize);
+        window.addEventListener('resize', onResize, { passive: true });
 
-        const count = window.innerWidth < 768 ? 40 : 65;
+        const isMobile = window.innerWidth < 768;
+        const count = isMobile ? 18 : 50;
+        const maxDist = isMobile ? 90 : 110;
+        const maxDistSq = maxDist * maxDist;
+
         const particles = Array.from({ length: count }, () => ({
           x: Math.random() * w,
           y: Math.random() * h,
-          radius: Math.random() * 2 + 1,
-          speedX: (Math.random() - 0.5) * 0.75,
-          speedY: (Math.random() - 0.5) * 0.75,
-          alpha: Math.random() * 0.5 + 0.35,
+          radius: Math.random() * 1.8 + 1,
+          speedX: (Math.random() - 0.5) * (isMobile ? 0.5 : 0.75),
+          speedY: (Math.random() - 0.5) * (isMobile ? 0.5 : 0.75),
+          alpha: Math.random() * 0.45 + 0.35,
           color: Math.random() > 0.4 ? '#22d3ee' : '#818cf8'
         }));
 
@@ -9223,41 +9285,52 @@
           if (finished) return;
           ctx.clearRect(0, 0, w, h);
 
-          // Draw dynamic cyber constellation network lines
+          // Fast batched cyber constellation network lines (Single path stroke)
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.22)';
+          ctx.lineWidth = 0.8;
+
           for (let i = 0; i < particles.length; i++) {
+            const pi = particles[i];
             for (let j = i + 1; j < particles.length; j++) {
-              const dx = particles[i].x - particles[j].x;
-              const dy = particles[i].y - particles[j].y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist < 110) {
-                ctx.beginPath();
-                ctx.strokeStyle = '#06b6d4';
-                ctx.globalAlpha = (1 - dist / 110) * 0.22;
-                ctx.lineWidth = 0.8;
-                ctx.moveTo(particles[i].x, particles[i].y);
-                ctx.lineTo(particles[j].x, particles[j].y);
-                ctx.stroke();
+              const pj = particles[j];
+              const dx = pi.x - pj.x;
+              if (dx > maxDist || dx < -maxDist) continue;
+              const dy = pi.y - pj.y;
+              if (dy > maxDist || dy < -maxDist) continue;
+              const distSq = dx * dx + dy * dy;
+              if (distSq < maxDistSq) {
+                ctx.moveTo(pi.x, pi.y);
+                ctx.lineTo(pj.x, pj.y);
               }
             }
           }
+          ctx.stroke();
 
           // Draw luminous particle nodes
-          particles.forEach(p => {
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             p.x += p.speedX;
             p.y += p.speedY;
             if (p.x < 0) p.x = w;
-            if (p.x > w) p.x = 0;
+            else if (p.x > w) p.x = 0;
             if (p.y < 0) p.y = h;
-            if (p.y > h) p.y = 0;
+            else if (p.y > h) p.y = 0;
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.globalAlpha = p.alpha;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = p.color;
+            if (!isMobile) {
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = p.color;
+            }
             ctx.fill();
-          });
+          }
+          if (!isMobile) {
+            ctx.shadowBlur = 0;
+          }
+
           animFrameId = requestAnimationFrame(renderSplashParticles);
         }
         renderSplashParticles();
@@ -9272,9 +9345,17 @@
         splash.classList.add('exit');
         document.body.style.overflow = '';
 
+        // Start background neural particles now that intro splash is leaving
+        if (typeof window.startBackgroundParticles === 'function') {
+          window.startBackgroundParticles();
+        }
+
         setTimeout(() => {
           splash.style.display = 'none';
-        }, 900);
+          if (canvas && ctx) {
+            ctx.clearRect(0, 0, w, h);
+          }
+        }, 750);
       }
 
       if (skipBtn) {
@@ -9355,6 +9436,9 @@
           splash.classList.add('exit');
         }
         document.body.style.overflow = '';
+        if (typeof window.startBackgroundParticles === 'function') {
+          window.startBackgroundParticles();
+        }
       }
     });
   </script>
